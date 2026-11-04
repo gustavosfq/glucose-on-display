@@ -1,0 +1,41 @@
+{
+  "name": "glucose-on-display",
+  "version": "1.2.0",
+  "main": "build/index.js",
+  "scripts": {
+    "compile": "tsc && npm run copy",
+    "dev": "npm run compile && electron build/index.js",
+    "start": "electron build/index.js",
+    "copy": "copyfiles -f  src/index.html src/alert.html build",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "electron-builder"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@babel/runtime": "^7.27.0",
+    "canvas": "^3.1.0",
+    "electron-store": "^10.0.1",
+    "libre-link-unofficial-api": "^1.0.0-alpha.7",
+    "typescript": "^5.8.2"
+  },
+  "devDependencies": {
+    "copyfiles": "^2.4.1",
+    "electron": "^35.1.2",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.gustavo.glucoseondisplay",
+    "productName": "GlucoseOnDisplay",
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": "dmg",
+      "icon": "glucose_icon.icns"
+    },
+    "files": [
+      "build/**/*",
+      "package.json"
+    ]
+  }
+}

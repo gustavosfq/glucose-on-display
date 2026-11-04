@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Alerta de Glucosa</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .alert-container {
+      width: 100%;
+      height: 500px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      text-align: center;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateY(-20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .alert-icon {
+      display: none;
+    }
+
+    .alert-title {
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .alert-message {
+      font-size: 16px;
+      margin-bottom: 5px;
+    }
+
+    .alert-value {
+      font-size: 72px;
+      font-weight: bold;
+      margin: 15px 0;
+      text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+
+    .alert-subtitle {
+      font-size: 14px;
+      opacity: 0.9;
+      margin-bottom: 15px;
+    }
+
+    .button-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      z-index: 1000;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .btn-dismiss {
+      background-color: white;
+      color: #333;
+    }
+
+    .btn-snooze {
+      background-color: rgba(255,255,255,0.3);
+      color: white;
+      backdrop-filter: blur(10px);
+    }
+
+    /* Tema único para todas las alertas */
+    .critical-high,
+    .critical-low,
+    .high,
+    .low,
+    .rapid-rise,
+    .rapid-fall {
+      background: linear-gradient(135deg, #b71c1c 0%, #d32f2f 100%);
+      color: white;
+    }
+
+    .trend-indicator {
+      font-size: 36px;
+      margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="alertContainer" class="alert-container">
+    <div class="alert-icon" id="alertIcon">⚠️</div>
+    <div class="alert-title" id="alertTitle">ALERTA DE GLUCOSA</div>
+    <div class="trend-indicator" id="trendIndicator"></div>
+    <div class="alert-value" id="alertValue">---</div>
+    <div class="alert-message" id="alertMessage">mg/dL</div>
+    <div class="alert-subtitle" id="alertSubtitle"></div>
+    
+    <div class="button-container">
+      <button class="btn-dismiss" onclick="dismissAlert()">Entendido</button>
+      <button class="btn-snooze" onclick="snoozeAlert(30)">Pausar 30 min</button>
+    </div>
+  </div>
+
+  <script>
+    window.onload = function() {
+      // Recibir datos de la alerta desde el proceso principal
+      window.api.onEvent('showAlert', (event, data) => {
+        showAlert(data);
+      });
+
+      // Solicitar los datos iniciales si los hay
+      window.api.invoke('getAlertData').then(data => {
+        if (data) {
+          showAlert(data);
+        }
+      });
+    };
+
+    function showAlert(data) {
+      const container = document.getElementById('alertContainer');
+      const icon = document.getElementById('alertIcon');
+      const title = document.getElementById('alertTitle');
+      const value = document.getElementById('alertValue');
+      const message = document.getElementById('alertMessage');
+      const subtitle = document.getElementById('alertSubtitle');
+      const trend = document.getElementById('trendIndicator');
+
+      // Limpiar clases anteriores
+      container.className = 'alert-container';
+
+      // Configurar según el tipo de alerta
+      switch(data.type) {
+        case 'critical-high':
+          container.classList.add('critical-high');
+          icon.textContent = '🚨';
+          title.textContent = '¡GLUCOSA CRÍTICA ALTA!';
+          subtitle.textContent = 'Toma acción inmediatamente';
+          break;
+        
+        case 'critical-low':
+          container.classList.add('critical-low');
+          icon.textContent = '🚨';
+          title.textContent = '¡GLUCOSA CRÍTICA BAJA!';
+          subtitle.textContent = 'Come algo ahora';
+          break;
+        
+        case 'high':
+          container.classList.add('high');
+          icon.textContent = '⚠️';
+          title.textContent = 'Glucosa Alta';
+          subtitle.textContent = 'Tu glucosa está por encima del rango';
+          break;
+        
+        case 'low':
+          container.classList.add('low');
+          icon.textContent = '⚠️';
+          title.textContent = 'Glucosa Baja';
+          subtitle.textContent = 'Tu glucosa está por debajo del rango';
+          break;
+        
+        case 'rapid-rise':
+          container.classList.add('rapid-rise');
+          icon.textContent = '📈';
+          title.textContent = 'Subida Rápida';
+          subtitle.textContent = data.rate ? `Subiendo ${Math.abs(data.rate).toFixed(1)} mg/dL por minuto` : '';
+          break;
+        
+        case 'rapid-fall':
+          container.classList.add('rapid-fall');
+          icon.textContent = '📉';
+          title.textContent = 'Bajada Rápida';
+          subtitle.textContent = data.rate ? `Bajando ${Math.abs(data.rate).toFixed(1)} mg/dL por minuto` : '';
+          break;
+      }
+
+      value.textContent = data.value || '---';
+      
+      // Mostrar tendencia si está disponible
+      if (data.trend) {
+        trend.textContent = getTrendArrow(data.trend);
+      } else {
+        trend.textContent = '';
+      }
+    }
+
+    function getTrendArrow(trendType) {
+      const arrows = {
+        'SingleDown': '↓↓',
+        'FortyFiveDown': '↘',
+        'Flat': '→',
+        'FortyFiveUp': '↗',
+        'SingleUp': '↑↑',
+        'NotComputable': '?'
+      };
+      return arrows[trendType] || '';
+    }
+
+    function dismissAlert() {
+      window.api.sendEvent('dismissAlert');
+    }
+
+    function snoozeAlert(minutes) {
+      window.api.sendEvent('snoozeAlert', minutes);
+    }
+  </script>
+</body>
+</html>
